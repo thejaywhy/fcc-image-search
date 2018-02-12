@@ -3,7 +3,8 @@
   "dependencies": {
     "express": "^4.14.0",
     "mongodb": "^3.0.1",
-    "synchronize": "^2.0.0" 
+    "synchronize": "^2.0.0",
+    "request": "^2.83.0"
   },
   "main": "server.js",
   "scripts": {

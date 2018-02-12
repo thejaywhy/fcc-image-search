@@ -6,6 +6,54 @@ var mongodb = require('mongodb');
 // Standard URI format: mongodb://[dbuser:dbpassword@]host:port/dbname, details set in .env
 var MONGODB_URI = process.env.URI;
 var collection;
+var MAX_HISTORY_TO_BE_STORED = 15;
+var MAX_HISTORY_TO_GET = 10
+
+function recentSearches() {
+  return new Promise(function (resolve, reject) {
+    try {
+      collection.find({})
+        .project({_id:0})
+        .sort({search_date: -1})
+        .limit(MAX_HISTORY_TO_GET)
+        .toArray(function(err, result){
+        if (err) reject(new DatastoreUnderlyingException(err));
+        resolve(result);
+      });
+      
+    } catch(ex) {
+      reject(new DatastoreUnknownException("recentSearches", null, ex));
+    }
+  });
+}
+
+function saveSearch(data) {
+    return new Promise(function (resolve, reject) {
+    try {      
+      data.search_date = new Date();
+      collection.insert(data, function (err, res) {
+        if (err) {
+          console.log("errorz: ", err);
+          reject(new DatastoreUnderlyingException(data, err));
+        } else {
+          resolve(res);
+        }
+      });
+      
+      // clean up any old searches
+      collection.find({})
+        .sort({search_date: 1})
+        .skip(MAX_HISTORY_TO_BE_STORED)
+      
+    } catch(ex) {
+      console.log("caughtz: ", ex);
+      reject(new DatastoreUnknownException("recentSearches", null, ex));
+    }
+  });
+}
+
+
+
 
 // ------------------------------
 // ASYNCHRONOUS PROMISE-BASED API
@@ -103,6 +151,17 @@ function connect() {
       mongodb.MongoClient.connect(MONGODB_URI, function(err, client) {
         if(err) reject(err);
         const db = client.db(process.env.DB);
+        
+        // Create the collection
+        // It's capped so things don't get out of hand
+        // Aka, we get a circular buffer and MongoDB manages it for us,
+        // for free
+        db.createCollection(
+          process.env.COLLECTION, 
+          { capped: true, max: MAX_HISTORY_TO_BE_STORED, size: 4096*10 }
+        );
+        
+        // Now set the datastore
         collection = db.collection(process.env.COLLECTION);
         resolve(collection);
       });
@@ -193,6 +252,26 @@ function removeManyCallback(keys, callback) {
     });
 }
 
+function recentSearchesCallback(callback) {
+  recentSearches()
+    .then(function (value) {
+      callback(null, value);
+    })
+    .catch(function (err) {
+      callback(err, null);
+    });
+}
+
+function saveSearchCallback(search, callback) {
+  saveSearch(search)
+    .then(function (value) {
+      callback(null, value);
+    })
+    .catch(function (err) {
+      callback(err, null);
+    });
+}
+
 function connectCallback(callback) {
   connect()
     .then(function (value) {
@@ -223,6 +302,14 @@ function connectSync() {
   return sync.await(connectCallback(sync.defer()));
 }
 
+function recentSearchesSync() {
+  return sync.await(recentSearchesCallback(sync.defer()));
+}
+
+function saveSearchSync(data) {
+  return sync.await(saveSearchCallback(data, sync.defer()));
+}
+
 function initializeApp(app) {
   app.use(function (req, res, next) {
     sync.fiber(next);
@@ -234,7 +321,9 @@ var asyncDatastore = {
   get: get,
   remove: remove,
   removeMany: removeMany,
-  connect: connect
+  connect: connect,
+  recentSearches: recentSearches,
+  saveSearch: saveSearch,
 };
 
 var syncDatastore = {
@@ -243,7 +332,9 @@ var syncDatastore = {
   remove: removeSync,
   removeMany: removeManySync,
   connect: connectSync,  
-  initializeApp: initializeApp
+  initializeApp: initializeApp,
+  recentSearches: recentSearchesSync,
+  saveSearch: saveSearchSync,
 };
 
 module.exports = {
