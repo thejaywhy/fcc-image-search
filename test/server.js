@@ -48,7 +48,7 @@ function initTestData(count=10) {
 
 
 // Load the model
-var UrlShort = require('../models/search.model');
+var Search = require('../models/search.model');
 
 const sandbox = sinon.sandbox.create();
 
@@ -71,6 +71,11 @@ describe('App', () => {
   describe('When I give a search string', () => {
     beforeEach(() => {
       this.get = sinon.stub(request, 'get');
+
+      this.stubModel = sinon.stub(Search.prototype, 'save');
+      this.expectedModel = {term: "pugs"};
+      this.stubModel.yields(null, this.expectedModel);
+
     });
 
     afterEach(() => {
@@ -80,17 +85,13 @@ describe('App', () => {
 
 
     it('it should return return image URLs, alt text and page URLs for a set of images', (done) => {
-      var stub = sinon.stub(UrlShort.prototype, 'save');
-      var expectedResult = {term: "pugs"};
-      stub.yields(null, expectedResult);
-
-      var query = expectedResult.term;
+      var query = this.expectedModel.term;
 
       var expectedCSEUrl = process.env.CSE_URL +
         "?key=" + process.env.CSE_API_KEY +
         "&cx=" + process.env.CX_ID +
         "&searchType=image&filter=1" +
-        "&q=" + expectedResult.term;
+        "&q=" + this.expectedModel.term;
       var expectedReferer = "http://127.0.0.1/api/images/" + query;
 
       var cseData = initTestData(10);
@@ -101,14 +102,22 @@ describe('App', () => {
       );
 
       chai.request(server)
-        .get('/api/images/' + expectedResult.term)
+        .get('/api/images/' + query)
         .end((err, res) => {
           res.should.have.status(200);
           res.should.be.json;
-          res.body.should.be.a('array');
+          res.body.should.be.a('object');
           res.body.should.not.have.property('error');
 
-          res.body.should.have.lengthOf(cseData.items.length);
+          res.body.query.should.not.be.null;
+          res.body.offset.should.not.be.null;
+          res.body.count.should.not.be.null;
+          res.body.items.should.not.be.null;
+
+          res.body.query.should.equal(this.expectedModel.term);
+          res.body.offset.should.equal(0);
+          res.body.count.should.equal(cseData.items.length);
+          res.body.items.should.have.lengthOf(res.body.count);
 
           this.get.should.have.been.calledWith({
             url: expectedCSEUrl,
@@ -116,25 +125,69 @@ describe('App', () => {
             json: true 
           });
 
-          stub.restore();
+          this.stubModel.restore();
+
+          done();
+        });
+    }),
+
+    it('it should return offset 0 if non integer given', (done) => {
+      var offset = 'a';
+      var query = this.expectedModel.term + "?offset=" + offset;
+
+      var expectedCSEUrl = process.env.CSE_URL +
+        "?key=" + process.env.CSE_API_KEY +
+        "&cx=" + process.env.CX_ID +
+        "&searchType=image&filter=1" +
+        "&q=" + this.expectedModel.term;
+      var expectedReferer = "http://127.0.0.1/api/images/" + query;
+
+      var cseData = initTestData(10);
+      this.get.yields(
+        null,
+        {statusCode: 200},
+        cseData
+      );
+
+      chai.request(server)
+        .get('/api/images/' + query)
+        .end((err, res) => {
+          res.should.have.status(200);
+          res.should.be.json;
+          res.body.should.be.a('object');
+          res.body.should.not.have.property('error');
+
+          res.body.query.should.not.be.null;
+          res.body.offset.should.not.be.null;
+          res.body.count.should.not.be.null;
+          res.body.items.should.not.be.null;
+
+          res.body.query.should.equal(this.expectedModel.term);
+          res.body.offset.should.equal(0);
+          res.body.count.should.equal(cseData.items.length);
+          res.body.items.should.have.lengthOf(res.body.count);
+
+          this.get.should.have.been.calledWith({
+            url: expectedCSEUrl,
+            headers: { Referer: expectedReferer },
+            json: true 
+          });
+
+          this.stubModel.restore();
 
           done();
         });
     }),
 
     it('it should paginate through the responses', (done) => {
-      var stub = sinon.stub(UrlShort.prototype, 'save');
-      var expectedResult = {term: "pugs"};
-      stub.yields(null, expectedResult);
-
       var offset = 2;
-      var query = expectedResult.term + "?offset=" + offset;
+      var query = this.expectedModel.term + "?offset=" + offset;
 
       var expectedCSEUrl = process.env.CSE_URL +
         "?key=" + process.env.CSE_API_KEY +
         "&cx=" + process.env.CX_ID +
         "&searchType=image&filter=1" +
-        "&q=" + expectedResult.term +
+        "&q=" + this.expectedModel.term +
         "&start=" + offset;
       var expectedReferer = "http://127.0.0.1/api/images/" + query;
 
@@ -150,10 +203,18 @@ describe('App', () => {
         .end((err, res) => {
           res.should.have.status(200);
           res.should.be.json;
-          res.body.should.be.a('array');
+          res.body.should.be.a('object');
           res.body.should.not.have.property('error');
 
-          res.body.should.have.lengthOf(cseData.items.length);
+          res.body.query.should.not.be.null;
+          res.body.offset.should.not.be.null;
+          res.body.count.should.not.be.null;
+          res.body.items.should.not.be.null;
+
+          res.body.query.should.equal(this.expectedModel.term);
+          res.body.offset.should.equal(offset);
+          res.body.count.should.equal(cseData.items.length);
+          res.body.items.should.have.lengthOf(res.body.count);
 
           this.get.should.have.been.calledWith({
             url: expectedCSEUrl,
@@ -161,7 +222,7 @@ describe('App', () => {
             json: true 
           });
 
-          stub.restore();
+          this.stubModel.restore();
 
           done();
         });
@@ -170,24 +231,47 @@ describe('App', () => {
 
   describe("When I want to see most recent searches", () => {
     it('it should return a list of most recently submitted search strings', (done) => {
-      var UrlShortMock = sinon.mock(UrlShort);
-      var expectedResult = {short: "apple", original:"https://apple.com"};
-      UrlShortMock.expects('find').yields(null, expectedResult);
+      var searchMock = sinon.mock(Search);
+      var expectedSearchResult = [
+        {term: "apple", search_date: "2018-02-12T00:06:17.372Z"},
+        {term: "frogs", search_date: "2018-02-12T00:16:17.372Z"}
+      ];
+
+      var mockChain = {
+        sort: function () {
+          return this;
+        },
+        select: function () {
+          return this;
+        },
+        limit: function () {
+          return this;
+        },
+        exec: function(callback) {
+          callback(null, expectedSearchResult);
+        }
+      };
+
+      sinon.spy(mongoose.Query.prototype, 'sort');
+      sinon.spy(mongoose.Query.prototype, 'select');
+      sinon.spy(mongoose.Query.prototype, 'limit');
+      sinon.stub(mongoose.Query.prototype, 'exec').yields(null, expectedSearchResult);
 
       chai.request(server)
-        .get('/api/' + expectedResult.short)
+        .get('/api/history/images')
         .end((err, res) => {
           res.should.have.status(200);
           res.should.be.json;
           res.body.should.be.a('object');
-          res.body.should.have.property('original');
-          res.body.should.have.property('short');
 
-          res.body.original.should.not.be.null;
-          res.body.short.should.not.be.null;
+          res.body.count.should.not.be.null;
+          res.body.items.should.not.be.null;
 
-          UrlShortMock.verify();
-          UrlShortMock.restore();
+          res.body.count.should.equal(expectedSearchResult.length);
+          res.body.items.should.have.lengthOf(res.body.count);
+
+          searchMock.verify();
+          searchMock.restore();
 
           done();
         });

@@ -53,7 +53,7 @@ app.get("/api/images/:term", function (request, response) {
   var results, referer = null;
 
   // get the offset, if any
-  var offset = request.query.offset;
+  var offset = parseInt(request.query.offset);
   if (!offset) offset = 0;
 
   referer = request.protocol + "://" + request.hostname + request.originalUrl
@@ -62,7 +62,14 @@ app.get("/api/images/:term", function (request, response) {
   if ( results == null ) {
     response.status(500).json({error: "Server Error"}); 
   } else {
-    response.status(200).json(transformResults(results));
+    results = transformResults(results);
+    response.status(200).json(
+      {
+        query: newSearch.term,
+        offset: offset,
+        count: results.length,
+        items: results
+      });
   }
 
 });
@@ -71,7 +78,13 @@ app.get("/api/images/:term", function (request, response) {
 // Build the History Route
 app.get("/api/history/images", function (request, response) {  
 
-  response.status(200).json(Search.recentSearches());
+  Search.recentSearches(function (err, result) {
+    if (err) return response.status(500).json({error: "History Server Error"});
+    return response.status(200).json({
+      count: result.length,
+      items: result
+    });
+  });
 
 });
 
