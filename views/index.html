@@ -27,67 +27,77 @@
         </h4>
         <pre>
         curl "https://jy-fcc-image-search.glitch.me/api/images/pugs?offset=20" | jq
-        [
-          {
-            "image_url": "http://www.pugnow.com/wp-content/uploads/2016/04/fly-pug-300x300.jpg",
-            "alt_text": "Flying Pugs | Extreme Pugs | Pug can Fly",
-            "page_url": "http://www.pugnow.com/flying-pugs/"
-          },
-          {
-            "image_url": "https://www.pets4homes.co.uk/images/breeds/13/large/3918021b2f92bd036598a095fb7e45de.jpg",
-            "alt_text": "Pug - Alchetron, The Free Social Encyclopedia",
-            "page_url": "https://alchetron.com/Pug"
-          },
-          ....
-        ]
+        {
+          "query": "pugs",
+          "offset": 20,
+          "count": 10,
+          "items": [
+            {
+              "image_url": "http://www.pugnow.com/wp-content/uploads/2016/04/fly-pug-300x300.jpg",
+              "alt_text": "Flying Pugs | Extreme Pugs | Pug can Fly",
+              "page_url": "http://www.pugnow.com/flying-pugs/"
+            },
+            {
+              "image_url": "https://www.pets4homes.co.uk/images/breeds/13/large/3918021b2f92bd036598a095fb7e45de.jpg",
+              "alt_text": "Pug - Alchetron, The Free Social Encyclopedia",
+              "page_url": "https://alchetron.com/Pug"
+            },
+            ....
+          ]
+        }
         </pre>
         <h4>
           Get Recent Searches
         </h4>
         <pre>
         curl "https://jy-fcc-image-search.glitch.me/api/history/images" | jq
-        [
-          {
-            "term": "code",
-            "search_date": "2018-02-12T00:06:22.956Z"
-          },
-          {
-            "term": "apples",
-            "search_date": "2018-02-12T00:06:17.372Z"
-          },
-          {
-            "term": "frogs",
-            "search_date": "2018-02-12T00:06:01.935Z"
-          },
-          {
-            "term": "bears",
-            "search_date": "2018-02-12T00:05:56.425Z"
-          },
-          {
-            "term": "animals",
-            "search_date": "2018-02-12T00:05:48.903Z"
-          },
-          {
-            "term": "penguins",
-            "search_date": "2018-02-12T00:05:33.982Z"
-          },
-          {
-            "term": "cats",
-            "search_date": "2018-02-12T00:05:28.204Z"
-          },
-          {
-            "term": "pugs",
-            "search_date": "2018-02-12T00:03:15.158Z"
-          },
-          {
-            "term": "pugs",
-            "search_date": "2018-02-12T00:02:31.507Z"
-          },
-          {
-            "term": "pugs",
-            "search_date": "2018-02-12T00:00:56.907Z"
-          }
-        ]
+        {
+          "query": "pugs",
+          "offset": 20,
+          "count": 10,
+          "items": [
+            {
+              "term": "code",
+              "search_date": "2018-02-12T00:06:22.956Z"
+            },
+            {
+              "term": "apples",
+              "search_date": "2018-02-12T00:06:17.372Z"
+            },
+            {
+              "term": "frogs",
+              "search_date": "2018-02-12T00:06:01.935Z"
+            },
+            {
+              "term": "bears",
+              "search_date": "2018-02-12T00:05:56.425Z"
+            },
+            {
+              "term": "animals",
+              "search_date": "2018-02-12T00:05:48.903Z"
+            },
+            {
+              "term": "penguins",
+              "search_date": "2018-02-12T00:05:33.982Z"
+            },
+            {
+              "term": "cats",
+              "search_date": "2018-02-12T00:05:28.204Z"
+            },
+            {
+              "term": "pugs",
+              "search_date": "2018-02-12T00:03:15.158Z"
+            },
+            {
+              "term": "pugs",
+              "search_date": "2018-02-12T00:02:31.507Z"
+            },
+            {
+              "term": "pugs",
+              "search_date": "2018-02-12T00:00:56.907Z"
+            }
+          ]
+        }
         </pre>
       </div>
     </div>
