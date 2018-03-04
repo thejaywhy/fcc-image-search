@@ -16,20 +16,10 @@ var SearchSchema = new Schema({
 });
 
 SearchSchema.statics.recentSearches = function recentSearches(callback) {
-  /*
-  this.find({})
-    .project({_id:0})
-    .sort({search_date: -1})
-    .limit(MAX_HISTORY_TO_GET)
-    .toArray(function(err, result){
-      if (err) return [];
-      return result;
-  });
-  */
   this.find()
     .sort({search_date: -1})
-    .select('term search_date')
     .limit(MAX_HISTORY_TO_GET)
+    .select({term: 1, search_date: 1, _id: 0})
     .exec(callback);
 }
 

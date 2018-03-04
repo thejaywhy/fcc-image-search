@@ -264,6 +264,7 @@ describe('App', () => {
           res.should.be.json;
           res.body.should.be.a('object');
 
+          res.body.should.not.have.property('_id');
           res.body.count.should.not.be.null;
           res.body.items.should.not.be.null;
 
