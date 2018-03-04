@@ -8,7 +8,7 @@ var Search = require('./models/search.model');
 // setup our datastore
 if ( process.env.NODE_ENV != "unit-test" ) {
   console.log("Trying to connect to db");
-  db = mongoose.connect(process.env.DB_URI);
+  var db = mongoose.connect(process.env.DB_URI);
   mongoose.connection.on('connected', function () {
     console.log('Mongoose default connection open to ' + process.env.DB);
   });
